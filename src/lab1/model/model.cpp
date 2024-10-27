@@ -1,14 +1,19 @@
 #include "header.h"
 
-const unsigned WND_WIDTH  = 800;
-const unsigned WND_HEIGHT = 600;
+const unsigned WND_WIDTH  = 1600;
+const unsigned WND_HEIGHT = 900;
 
 float deltaFrame = 0.0f, lastFrame = 0.0f, currentFrame = 0.0f;
 float lastPosX = WND_WIDTH / 2.0f, lastPosY = WND_HEIGHT / 2.0f;
 bool firstMouse = true;
 
+float keySensitivity = 4.0f;
 
 bool isMouseLeft = false, isMouseRight = false;
+
+glm::vec3 displacement = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
+float rotate = 0.0f;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
@@ -50,7 +55,7 @@ int main() {
     glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
+    // glfwSwapInterval(1);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD!\n";
@@ -58,19 +63,22 @@ int main() {
     }
 
     // Z-Buffer
-    glEnable(GL_DEPTH_TEST);\
+    glEnable(GL_DEPTH_TEST);
 
     // stbi flip y-axis
-    stbi_set_flip_vertically_on_load(true);
+    // stbi_set_flip_vertically_on_load(true);
     
     // shader
     Shader shader("model.vs", "model.fs");
 
     // model
-    Model ourModel(FileSystem::getPath("resource/model/creeper/creeper.obj"));
+    // Model ourModel(FileSystem::getPath("resource/model/airboat/airboat.obj"));
+    // Model ourModel(FileSystem::getPath("resource/model/cart/Cart.obj"));
     // Model ourModel(FileSystem::getPath("resource//model/backpack/backpack.obj"));
-    // Model ourModel(FileSystem::getPath("resource/model/armor/Artorias.obj"));
 
+    Model ourModel(FileSystem::getPath("resource/model/creeper/Creeper.obj"));
+    // Model ourModel(FileSystem::getPath("resource/model/lisa/Lisa.obj"));
+    
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0.2f, 0.2f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -82,7 +90,10 @@ int main() {
         shader.use();
 
         glm::mat4 model(1.0f);
-        model = glm::rotate(model, glm::radians((float)glfwGetTime() * 20.0f), glm::vec3(0.0f, 0.5f, 0.0f));
+        model = glm::translate(model, displacement);
+        model = glm::scale(model, scale);
+        model = glm::rotate(model, glm::radians(rotate), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::rotate(model, glm::radians((float)glfwGetTime() * 20.0f), glm::vec3(0.0f, 0.5f, 0.0f));
         auto view = camera.getViewMatrix();
         auto projection = glm::perspective(glm::radians(camera.fov_zoom), (float) WND_WIDTH / WND_HEIGHT, 0.1f, 100.0f);
 
@@ -114,17 +125,41 @@ void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, in
         glfwSetWindowShouldClose(window, true);
     }
 
-    if (key == GLFW_KEY_W && action == GLFW_REPEAT) {
-        camera.processKeyboard(CAMERA_MOVEMENT::FORWARD, deltaFrame);
+    if (key == GLFW_KEY_W && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+        // camera.processKeyboard(CAMERA_MOVEMENT::FORWARD, deltaFrame);
+        displacement.z += deltaFrame * keySensitivity; 
     }
-    if (key == GLFW_KEY_S && action == GLFW_REPEAT) {
-        camera.processKeyboard(CAMERA_MOVEMENT::BACKWARD, deltaFrame);
+    if (key == GLFW_KEY_S && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+        // camera.processKeyboard(CAMERA_MOVEMENT::BACKWARD, deltaFrame);
+        displacement.z -= deltaFrame * keySensitivity; 
     }
-    if (key == GLFW_KEY_A && action == GLFW_REPEAT) {
-        camera.processKeyboard(CAMERA_MOVEMENT::LEFT, deltaFrame);
+    if (key == GLFW_KEY_A && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+        // camera.processKeyboard(CAMERA_MOVEMENT::LEFT, deltaFrame);
+        displacement.x -= deltaFrame * keySensitivity; 
     }
-    if (key == GLFW_KEY_D && action == GLFW_REPEAT) {
-        camera.processKeyboard(CAMERA_MOVEMENT::RIGHT, deltaFrame);
+    if (key == GLFW_KEY_D && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+        // camera.processKeyboard(CAMERA_MOVEMENT::RIGHT, deltaFrame);
+        displacement.x += deltaFrame * keySensitivity; 
+    }
+
+    if (key == GLFW_KEY_Q && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+        rotate += deltaFrame * 50.0f;
+    }
+
+    if (key == GLFW_KEY_E && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+        rotate -= deltaFrame * 50.0f;
+    }
+
+    if (key == GLFW_KEY_UP &&(action == GLFW_REPEAT || action == GLFW_PRESS)) {
+        scale.x += deltaFrame * 0.5f;
+        scale.y += deltaFrame * 0.5f;
+        scale.z += deltaFrame * 0.5f;
+    }
+
+    if (key == GLFW_KEY_DOWN && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+        scale.x -= deltaFrame * 0.5f;
+        scale.y -= deltaFrame * 0.5f;
+        scale.z -= deltaFrame * 0.5f;
     }
 
     if (key == GLFW_KEY_F11 && action == GLFW_PRESS) {
@@ -141,7 +176,7 @@ void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, in
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    if (isMouseLeft){
+    if (isMouseRight){
         if (firstMouse) {
             lastPosX = xpos;
             lastPosY = ypos;
@@ -150,6 +185,15 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
         float xoffset = xpos - lastPosX;
         float yoffset = lastPosY - ypos;
         camera.processMouseMovement(xoffset, yoffset);
+    } else if (isMouseLeft) {
+        if (firstMouse) {
+            lastPosX = xpos;
+            lastPosY = ypos;
+            firstMouse = false;
+        }
+        float xoffset = xpos - lastPosX;
+        float yoffset = lastPosY - ypos;
+        camera.processCameraPosition(xoffset, yoffset);
     }
     lastPosX = xpos;
     lastPosY = ypos;
@@ -170,6 +214,6 @@ void mouse_button_callback(GLFWwindow* window, int key, int action, int mods) {
         isMouseRight = true;
     } 
     if (key == GLFW_MOUSE_BUTTON_2 && action == GLFW_RELEASE){
-        isMouseLeft = false;
+        isMouseRight = false;
     }
 }
