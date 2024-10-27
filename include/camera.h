@@ -55,6 +55,9 @@ public:
 
     // process input received from a mouse scroll-wheel event
     void processMouseScroll(float);
+
+    // process input to change camera position
+    void processCameraPosition(float, float);
 private:
     void updateCameraVectors();
 };
@@ -126,6 +129,11 @@ void Camera::processMouseScroll(float yoffset) {
     fov_zoom -= yoffset;
     fov_zoom = std::max(1.0f, fov_zoom);
     fov_zoom = std::min(60.0f, fov_zoom);
+}
+
+void Camera::processCameraPosition(float xoffset, float yoffset) {
+    position.z -= xoffset * mouseSensitivity / 10;
+    position.y += yoffset * mouseSensitivity / 10; // need smaller sensitivity
 }
 
 #endif // CAMERA_H
