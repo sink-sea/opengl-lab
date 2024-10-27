@@ -152,10 +152,10 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
         auto specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", scene);
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
         // 3. normal maps
-        auto normalMaps = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal", scene);
+        auto normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal", scene);
         textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
         // 4. height maps
-        auto heightMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_height", scene);
+        auto heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height", scene);
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
     }
     return Mesh(vertices, indices, textures);
@@ -164,6 +164,18 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 // check all material textures and load if not
 std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, const aiScene* scene) {
     std::vector<Texture> textures;
+    // std::cout << mat->GetTextureCount(type) << '\n';
+    if (mat->GetTextureCount(type) != 0)
+        std::cout << typeName << '\n';
+    
+    if (mat->GetTextureCount(type) == 0 && type == aiTextureType_DIFFUSE) {
+        Texture texture;
+        texture.id = TextureFromFile("default.png", directory, GL_REPEAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR);
+        texture.type = typeName;
+        texture.path = "default.png";
+        textures.push_back(texture);
+        return textures;
+    }
     for (unsigned i{}; i < mat->GetTextureCount(type); i ++) {
         aiString str;
         mat->GetTexture(type, i, &str);
@@ -203,6 +215,7 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
 unsigned TextureFromFile(const char* path, const std::string& directory, GLint wrapMode, GLint MagFilterMode, GLint MinFilterMode) {
     std::string fileName(path);
     fileName = directory + "/" + fileName;
+    std::cout << fileName << '\n';
 
     // load texture
     unsigned textureID{};
@@ -231,7 +244,7 @@ unsigned TextureFromFile(const char* path, const std::string& directory, GLint w
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
     } else {
-        std::cout << "Texture failed to load at path: " << path << 'n';
+        std::cout << "Texture failed to load at path: " << path << '\n';
     }
     stbi_image_free(data);
     glBindTexture(GL_TEXTURE_2D, 0);
