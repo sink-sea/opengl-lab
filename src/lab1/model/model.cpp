@@ -5,7 +5,7 @@ const unsigned WND_HEIGHT = 900;
 
 float deltaFrame = 0.0f, lastFrame = 0.0f, currentFrame = 0.0f;
 float lastPosX = WND_WIDTH / 2.0f, lastPosY = WND_HEIGHT / 2.0f;
-bool firstMouse = true;
+bool firstMouse = true, isMouseRelase = false;
 
 float keySensitivity = 4.0f;
 
@@ -23,6 +23,7 @@ void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, in
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void mouse_scoll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void processInput(GLFWwindow* window);
 
 int main() {
     // error message
@@ -78,11 +79,34 @@ int main() {
 
     Model ourModel(FileSystem::getPath("resource/model/creeper/Creeper.obj"));
     // Model ourModel(FileSystem::getPath("resource/model/lisa/Lisa.obj"));
+
+    // imgui implementation
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void) io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // enable keyboard controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // enable gamepad controls
+
+    // setup gui style
+    ImGui::StyleColorsDark();
+    // ImGui::StyleColorsLight();
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init();
     
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0.2f, 0.2f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        // ImGui::ShowDemoWindow();
+        ImGui::Text("Simple Config");
+        ImGui::SliderFloat("rotate_angle", &rotate, -180.0f, 180.0f);
+
+        processInput(window);
+
         currentFrame = glfwGetTime();
         deltaFrame = currentFrame - lastFrame;
         lastFrame = currentFrame;
@@ -103,10 +127,16 @@ int main() {
 
         ourModel.Draw(shader);
 
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     glfwTerminate();
 
     return 0;
@@ -120,46 +150,38 @@ void frameBuffer_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
+void processInput(GLFWwindow* window) { // smoothly
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        displacement.z -= deltaFrame * keySensitivity;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        displacement.z += deltaFrame * keySensitivity;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        displacement.x -= deltaFrame * keySensitivity;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        displacement.x += deltaFrame * keySensitivity;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+        rotate += deltaFrame * 50.0f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        rotate -= deltaFrame * 50.0f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        float offset = deltaFrame * 0.5f; 
+        scale += glm::vec3(offset, offset, offset);
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        float offset = deltaFrame * 0.5f; 
+        scale -= glm::vec3(offset, offset, offset);
+    }
+}
+
 void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
-    }
-
-    if (key == GLFW_KEY_W && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-        // camera.processKeyboard(CAMERA_MOVEMENT::FORWARD, deltaFrame);
-        displacement.z += deltaFrame * keySensitivity; 
-    }
-    if (key == GLFW_KEY_S && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-        // camera.processKeyboard(CAMERA_MOVEMENT::BACKWARD, deltaFrame);
-        displacement.z -= deltaFrame * keySensitivity; 
-    }
-    if (key == GLFW_KEY_A && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-        // camera.processKeyboard(CAMERA_MOVEMENT::LEFT, deltaFrame);
-        displacement.x -= deltaFrame * keySensitivity; 
-    }
-    if (key == GLFW_KEY_D && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-        // camera.processKeyboard(CAMERA_MOVEMENT::RIGHT, deltaFrame);
-        displacement.x += deltaFrame * keySensitivity; 
-    }
-
-    if (key == GLFW_KEY_Q && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-        rotate += deltaFrame * 50.0f;
-    }
-
-    if (key == GLFW_KEY_E && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-        rotate -= deltaFrame * 50.0f;
-    }
-
-    if (key == GLFW_KEY_UP &&(action == GLFW_REPEAT || action == GLFW_PRESS)) {
-        scale.x += deltaFrame * 0.5f;
-        scale.y += deltaFrame * 0.5f;
-        scale.z += deltaFrame * 0.5f;
-    }
-
-    if (key == GLFW_KEY_DOWN && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-        scale.x -= deltaFrame * 0.5f;
-        scale.y -= deltaFrame * 0.5f;
-        scale.z -= deltaFrame * 0.5f;
     }
 
     if (key == GLFW_KEY_F11 && action == GLFW_PRESS) {
@@ -173,6 +195,44 @@ void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, in
         }
         isFullScreen = !isFullScreen;
     }
+
+    // if (key == GLFW_KEY_W && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+    //     // camera.processKeyboard(CAMERA_MOVEMENT::FORWARD, deltaFrame);
+    //     displacement.z += deltaFrame * keySensitivity; 
+    // }
+    // if (key == GLFW_KEY_S && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+    //     // camera.processKeyboard(CAMERA_MOVEMENT::BACKWARD, deltaFrame);
+    //     displacement.z -= deltaFrame * keySensitivity; 
+    // }
+    // if (key == GLFW_KEY_A && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+    //     // camera.processKeyboard(CAMERA_MOVEMENT::LEFT, deltaFrame);
+    //     displacement.x -= deltaFrame * keySensitivity; 
+    // }
+    // if (key == GLFW_KEY_D && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+    //     // camera.processKeyboard(CAMERA_MOVEMENT::RIGHT, deltaFrame);
+    //     displacement.x += deltaFrame * keySensitivity; 
+    // }
+
+    // if (key == GLFW_KEY_Q && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+    //     rotate += deltaFrame * 50.0f;
+    // }
+
+    // if (key == GLFW_KEY_E && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+    //     rotate -= deltaFrame * 50.0f;
+    // }
+
+    // if (key == GLFW_KEY_UP &&(action == GLFW_REPEAT || action == GLFW_PRESS)) {
+    //     scale.x += deltaFrame * 0.5f;
+    //     scale.y += deltaFrame * 0.5f;
+    //     scale.z += deltaFrame * 0.5f;
+    // }
+
+    // if (key == GLFW_KEY_DOWN && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
+    //     scale.x -= deltaFrame * 0.5f;
+    //     scale.y -= deltaFrame * 0.5f;
+    //     scale.z -= deltaFrame * 0.5f;
+    // }
+
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
@@ -204,16 +264,26 @@ void mouse_scoll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 }
 
 void mouse_button_callback(GLFWwindow* window, int key, int action, int mods) {
-    if (key == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS){
-        isMouseLeft = true;
-    } 
-    if (key == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE){
-        isMouseLeft = false;
-    } 
-    if (key == GLFW_MOUSE_BUTTON_2 && action == GLFW_PRESS){
-        isMouseRight = true;
-    } 
-    if (key == GLFW_MOUSE_BUTTON_2 && action == GLFW_RELEASE){
-        isMouseRight = false;
+    if (!isMouseRelase) {
+        if (key == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS){
+            isMouseLeft = true;
+        } 
+        if (key == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE){
+            isMouseLeft = false;
+        } 
+        if (key == GLFW_MOUSE_BUTTON_2 && action == GLFW_PRESS){
+            isMouseRight = true;
+        } 
+        if (key == GLFW_MOUSE_BUTTON_2 && action == GLFW_RELEASE){
+            isMouseRight = false;
+        }
+    }
+    if (key == GLFW_MOUSE_BUTTON_3 && action == GLFW_PRESS) {
+        isMouseRelase = !isMouseRelase;
+        if (isMouseRelase) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        } else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
     }
 }

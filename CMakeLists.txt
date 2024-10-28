@@ -26,7 +26,7 @@ configure_file(config/root_directory.h.in config/root_directory.h)
 include_directories(${CMAKE_BINARY_DIR}/config)
 
 # set libs and include directories
-set(3rd-LIBS glfw glad glm assimp)
+set(3rd-LIBS glfw glad glm assimp imgui)
 
 # set(INCLUDES include/main.h include/linmath.h)
 set(LIBS ${3rd-LIBS} OpenGL::GL)
