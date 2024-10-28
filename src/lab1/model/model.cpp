@@ -1,22 +1,27 @@
+/*
+ * Computer Graphics Assignment1
+ * @author: iwaxi_dy
+ * main code part
+*/
 #include "header.h"
 
-const unsigned WND_WIDTH  = 1600;
+const unsigned WND_WIDTH  = 1200;
 const unsigned WND_HEIGHT = 900;
 
-float deltaFrame = 0.0f, lastFrame = 0.0f, currentFrame = 0.0f;
-float lastPosX = WND_WIDTH / 2.0f, lastPosY = WND_HEIGHT / 2.0f;
-bool firstMouse = true, isMouseRelase = false;
-
-float keySensitivity = 4.0f;
-
+// variables
+float deltaFrame = 0.0f, lastFrame = 0.0f, currentFrame = 0.0f;  // deltaFrame
+float lastPosX = WND_WIDTH / 2.0f, lastPosY = WND_HEIGHT / 2.0f; // mouse position
+bool firstMouse = true, isMouseRelase = false;                   // mouse state
 bool isMouseLeft = false, isMouseRight = false;
+float keySensitivity = 4.0f;                                     // sensitivity
 
-glm::vec3 displacement = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 displacement = glm::vec3(0.0f, 0.0f, 0.0f);            // model matrix parameters
 glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
 float rotate = 0.0f;
 
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f)); // camera
 
+// call back functions
 void error_callback(int error_code, const char* description);
 void frameBuffer_callback(GLFWwindow* window, int width, int height);
 void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -67,18 +72,13 @@ int main() {
     glEnable(GL_DEPTH_TEST);
 
     // stbi flip y-axis
-    // stbi_set_flip_vertically_on_load(true);
+    // stbi_set_flip_vertically_on_load(true); // here, the texture is upside down
     
     // shader
     Shader shader("model.vs", "model.fs");
 
     // model
-    // Model ourModel(FileSystem::getPath("resource/model/airboat/airboat.obj"));
-    // Model ourModel(FileSystem::getPath("resource/model/cart/Cart.obj"));
-    // Model ourModel(FileSystem::getPath("resource//model/backpack/backpack.obj"));
-
     Model ourModel(FileSystem::getPath("resource/model/creeper/Creeper.obj"));
-    // Model ourModel(FileSystem::getPath("resource/model/lisa/Lisa.obj"));
 
     // imgui implementation
     IMGUI_CHECKVERSION();
@@ -102,8 +102,14 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         // ImGui::ShowDemoWindow();
-        ImGui::Text("Simple Config");
-        ImGui::SliderFloat("rotate_angle", &rotate, -180.0f, 180.0f);
+        ImGui::Text("OpenGL Config");
+        ImGui::SliderFloat("rotate_angle", &rotate, -120.0f, 120.0f);
+        ImGui::SliderFloat3("displacement", &displacement.x, -5.0f, 5.0f);
+        ImGui::SliderFloat("scale", &scale.x, -2.0f, 2.0f);
+        ImGui::SliderFloat("FOV", &camera.fov_zoom, 1.0f, 60.0f);
+        ImGui::SliderFloat("PICTH", &camera.pitch, -89.0f, 89.0f);
+        ImGui::SliderFloat("YAW", &camera.yaw, -180.0f, 180.0f);
+        ImGui::SliderFloat3("camera_position", &camera.position.x, -5.0f, 5.0f);
 
         processInput(window);
 
@@ -152,10 +158,10 @@ void frameBuffer_callback(GLFWwindow* window, int width, int height) {
 
 void processInput(GLFWwindow* window) { // smoothly
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        displacement.z -= deltaFrame * keySensitivity;
+        displacement.z += deltaFrame * keySensitivity;
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        displacement.z += deltaFrame * keySensitivity;
+        displacement.z -= deltaFrame * keySensitivity;
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
         displacement.x -= deltaFrame * keySensitivity;
@@ -195,44 +201,6 @@ void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, in
         }
         isFullScreen = !isFullScreen;
     }
-
-    // if (key == GLFW_KEY_W && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-    //     // camera.processKeyboard(CAMERA_MOVEMENT::FORWARD, deltaFrame);
-    //     displacement.z += deltaFrame * keySensitivity; 
-    // }
-    // if (key == GLFW_KEY_S && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-    //     // camera.processKeyboard(CAMERA_MOVEMENT::BACKWARD, deltaFrame);
-    //     displacement.z -= deltaFrame * keySensitivity; 
-    // }
-    // if (key == GLFW_KEY_A && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-    //     // camera.processKeyboard(CAMERA_MOVEMENT::LEFT, deltaFrame);
-    //     displacement.x -= deltaFrame * keySensitivity; 
-    // }
-    // if (key == GLFW_KEY_D && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-    //     // camera.processKeyboard(CAMERA_MOVEMENT::RIGHT, deltaFrame);
-    //     displacement.x += deltaFrame * keySensitivity; 
-    // }
-
-    // if (key == GLFW_KEY_Q && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-    //     rotate += deltaFrame * 50.0f;
-    // }
-
-    // if (key == GLFW_KEY_E && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-    //     rotate -= deltaFrame * 50.0f;
-    // }
-
-    // if (key == GLFW_KEY_UP &&(action == GLFW_REPEAT || action == GLFW_PRESS)) {
-    //     scale.x += deltaFrame * 0.5f;
-    //     scale.y += deltaFrame * 0.5f;
-    //     scale.z += deltaFrame * 0.5f;
-    // }
-
-    // if (key == GLFW_KEY_DOWN && (action == GLFW_REPEAT || action == GLFW_PRESS)) {
-    //     scale.x -= deltaFrame * 0.5f;
-    //     scale.y -= deltaFrame * 0.5f;
-    //     scale.z -= deltaFrame * 0.5f;
-    // }
-
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
