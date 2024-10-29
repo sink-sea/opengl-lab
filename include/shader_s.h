@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <glm/glm.hpp>
 
 class Shader {
 public:
@@ -21,6 +22,7 @@ public:
     void setFloat1(const std::string&, float = 0.0f) const;
     void setFloat4(const std::string&, float = 0.0f, float = 0.0f, float = 0.0f, float = 1.0f) const;
     void setMat4(const std::string&, const float*) const;
+    void setVec3(const std::string&, const glm::vec3&) const;
 private:
     void checkCompileError(GLuint shader, std::string type);
 };
@@ -101,6 +103,10 @@ void Shader::setFloat1(const std::string& name, float val) const {
 
 void Shader::setMat4(const std::string& name, const float* val) const {
     glUniformMatrix4fv(glGetUniformLocation(programID, name.c_str()), 1, GL_FALSE, val);
+}
+
+void Shader::setVec3(const std::string& name, const glm::vec3& vec) const {
+    glUniform3f(glGetUniformLocation(programID, name.c_str()), vec.x, vec.y, vec.z);
 }
 
 void Shader::checkCompileError(GLuint shader, std::string type) {

@@ -56,7 +56,8 @@ private:
 void Model::loadModel(std::string const& path) {
     // read model with assimp extentions
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(path, aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
+    // const aiScene* scene = importer.ReadFile(path, aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
+    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
 
     // check for errors
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) { // null
@@ -90,6 +91,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     std::vector<Vertex> vertices;
     std::vector<unsigned> indices;
     std::vector<Texture> textures;
+    Material meshMaterials;
 
     // walk through each of the mesh vertices
     for (unsigned i{}; i < mesh->mNumVertices; i ++) {
@@ -116,16 +118,16 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
             vec.x = mesh->mTextureCoords[0][i].x; 
             vec.y = mesh->mTextureCoords[0][i].y;
             vertex.TexCoord = vec;
-            // tangent
-            vector.x = mesh->mTangents[i].x;
-            vector.y = mesh->mTangents[i].y;
-            vector.z = mesh->mTangents[i].z;
-            vertex.Tangent = vector;
-            // bitangent
-            vector.x = mesh->mBitangents[i].x;
-            vector.y = mesh->mBitangents[i].y;
-            vector.z = mesh->mBitangents[i].z;
-            vertex.Bitangent = vector;
+            // // tangent
+            // vector.x = mesh->mTangents[i].x;
+            // vector.y = mesh->mTangents[i].y;
+            // vector.z = mesh->mTangents[i].z;
+            // vertex.Tangent = vector;
+            // // bitangent
+            // vector.x = mesh->mBitangents[i].x;
+            // vector.y = mesh->mBitangents[i].y;
+            // vector.z = mesh->mBitangents[i].z;
+            // vertex.Bitangent = vector;
         } else {
             vertex.TexCoord = glm::vec2(0.0f, 0.0f);
         }
@@ -142,8 +144,28 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     }
 
     // process material
-    if (mesh->mMaterialIndex >= 0) {
+    // if (mesh->mMaterialIndex >= 0) {
+
         auto material = scene->mMaterials[mesh->mMaterialIndex];
+
+        // material color detect
+        aiColor4D diffuse, ambient, specular;
+        if (aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &diffuse) == AI_SUCCESS) {
+            meshMaterials.mDiffuse = glm::vec3(diffuse.r, diffuse.g, diffuse.g);
+        } else {
+            meshMaterials.mDiffuse = glm::vec3(0.5f, 0.5f, 0.5f);
+        }
+        if (aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &ambient) == AI_SUCCESS) {
+            meshMaterials.mAmbient = glm::vec3(ambient.r, ambient.g, ambient.g);
+        } else {
+            meshMaterials.mAmbient = glm::vec3(0.1f, 0.1f, 0.1f);
+        }
+        if (aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &specular) == AI_SUCCESS) {
+            meshMaterials.mSpecular = glm::vec3(specular.r, specular.g, specular.g);
+        } else {
+            meshMaterials.mSpecular = glm::vec3(1.0f, 1.0f, 1.0f);
+        }
+
         // Types with number N defined in mesh.h
         // 1. diffuse maps
         auto diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", scene);
@@ -151,14 +173,14 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
         // 2. specular maps
         auto specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", scene);
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-        // 3. normal maps
-        auto normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal", scene);
-        textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-        // 4. height maps
-        auto heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height", scene);
-        textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
-    }
-    return Mesh(vertices, indices, textures);
+        // // 3. normal maps
+        // auto normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal", scene);
+        // textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+        // // 4. height maps
+        // auto heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height", scene);
+        // textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+    // }
+    return Mesh(vertices, indices, textures, meshMaterials);
 }
 
 // check all material textures and load if not
@@ -168,14 +190,15 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
     if (mat->GetTextureCount(type) != 0)
         std::cout << typeName << '\n';
     
-    if (mat->GetTextureCount(type) == 0 && type == aiTextureType_DIFFUSE) {
-        Texture texture;
-        texture.id = TextureFromFile("default.png", directory, GL_REPEAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR);
-        texture.type = typeName;
-        texture.path = "default.png";
-        textures.push_back(texture);
-        return textures;
-    }
+    // if (mat->GetTextureCount(type) == 0 && type == aiTextureType_DIFFUSE) {
+    //     Texture texture;
+    //     texture.id = TextureFromFile("default.png", directory, GL_REPEAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR);
+    //     texture.type = typeName;
+    //     texture.path = "default.png";
+    //     textures.push_back(texture);
+    //     return textures;
+    // } // default texture
+
     for (unsigned i{}; i < mat->GetTextureCount(type); i ++) {
         aiString str;
         mat->GetTexture(type, i, &str);

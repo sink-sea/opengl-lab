@@ -2,31 +2,41 @@
 
 out vec4 FragColor;
 
-in vec2 TexCoords;
+in vec2 oTexCoords;
+in vec3 oNormal;
+in vec3 oCamPos;
+in vec3 oFragPos;
 
 uniform sampler2D texture_diffuse1;
-uniform sampler2D texture_diffuse2;
-// uniform sampler2D texture_diffuse3;
-// uniform sampler2D texture_specular1;
-// uniform sampler2D texture_specular2;
-// uniform sampler2D texture_normal1;
-// uniform sampler2D texture_normal2;
-// uniform sampler2D texture_normal3;
-// uniform sampler2D texture_height1;
-// uniform sampler2D texture_height2;
-// uniform sampler2D texture_height3;
+uniform sampler2D texture_specular1;
+
+uniform int useTexture;
+
+uniform vec3  uDiffuse;
+uniform vec3  uAmbient;
+uniform vec3  uSpecular;
+uniform float uLightStr;
+uniform float uN;
+uniform vec3  uLightPos;
+uniform vec3  uLightColour;
 
 void main(){
-    vec4 diffuse1 = texture(texture_diffuse1, TexCoords);
-    vec4 diffuse2 = texture(texture_diffuse2, TexCoords);
-    // vec4 diffuse3 = texture(texture_diffuse3, TexCoords);
-    // vec4 specular1 = texture(texture_specular1, TexCoords);
-    // vec4 specular2 = texture(texture_specular2, TexCoords);
-    // vec4 normal1 = texture(texture_normal1, TexCoords);
-    // vec4 normal2 = texture(texture_normal2, TexCoords);
-    // vec4 normal3 = texture(texture_normal3, TexCoords);
-    // vec4 height1 = texture(texture_height1, TexCoords);
-    // vec4 height2 = texture(texture_height2, TexCoords);
-    // vec4 height3 = texture(texture_height3, TexCoords);
-    FragColor = diffuse1 * 0.5 + diffuse2 * 0.5;
+    vec3 normal = normalize(oNormal);
+    vec3 lightDir = normalize(uLightPos - oFragPos);
+    vec3 viewDir = normalize(oCamPos - oFragPos);
+
+    vec3 ambient = uAmbient * uLightColour * uLightStr;
+
+    float diff = max(dot(lightDir, normal), 0.0f); // Lambert diffuse model
+    vec3 diffuse = uDiffuse * uLightColour * diff;
+
+    vec3 halfVec = normalize(lightDir + viewDir);
+    float spec = max(dot(halfVec, normal), 0.0f);
+    vec3 specular = uSpecular * uLightColour * pow(spec, uN); // Phong's model
+
+    if (useTexture == 0) {
+        FragColor = vec4(specular + diffuse + ambient, 1.0f);
+    } else {
+        FragColor = mix(texture(texture_diffuse1, oTexCoords), vec4(specular + diffuse + ambient, 1.0f), 0.2); // mix together
+    }
 }

@@ -1,6 +1,6 @@
 /*
  * Computer Graphics Assignment1
- * @author: iwaxi_dy
+ * @author: iwaxi_dy 3022202191
  * main code part
 */
 #include "header.h"
@@ -14,6 +14,7 @@ float lastPosX = WND_WIDTH / 2.0f, lastPosY = WND_HEIGHT / 2.0f; // mouse positi
 bool firstMouse = true, isMouseRelase = false;                   // mouse state
 bool isMouseLeft = false, isMouseRight = false;
 float keySensitivity = 4.0f;                                     // sensitivity
+bool wireFrame = false;
 
 glm::vec3 displacement = glm::vec3(0.0f, 0.0f, 0.0f);            // model matrix parameters
 glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -80,10 +81,16 @@ int main() {
     // model
     Model ourModel(FileSystem::getPath("resource/model/creeper/Creeper.obj"));
 
+    // light
+    Light light({
+        {10.0f, 30.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, 0.2f, 5.0f
+    });
+
     // imgui implementation
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void) io;
+    io.Fonts->AddFontFromFileTTF(FileSystem::getPath("resource/font/Consolas.ttf").c_str(), 18);
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // enable keyboard controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // enable gamepad controls
 
@@ -98,18 +105,12 @@ int main() {
         glClearColor(0.2f, 0.2f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-        // ImGui::ShowDemoWindow();
-        ImGui::Text("OpenGL Config");
-        ImGui::SliderFloat("rotate_angle", &rotate, -120.0f, 120.0f);
-        ImGui::SliderFloat3("displacement", &displacement.x, -5.0f, 5.0f);
-        ImGui::SliderFloat("scale", &scale.x, -2.0f, 2.0f);
-        ImGui::SliderFloat("FOV", &camera.fov_zoom, 1.0f, 60.0f);
-        ImGui::SliderFloat("PICTH", &camera.pitch, -89.0f, 89.0f);
-        ImGui::SliderFloat("YAW", &camera.yaw, -180.0f, 180.0f);
-        ImGui::SliderFloat3("camera_position", &camera.position.x, -5.0f, 5.0f);
+        if (wireFrame) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
+        else {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
 
         processInput(window);
 
@@ -121,17 +122,47 @@ int main() {
 
         glm::mat4 model(1.0f);
         model = glm::translate(model, displacement);
+        scale.y = scale.z = scale.x;
         model = glm::scale(model, scale);
         model = glm::rotate(model, glm::radians(rotate), glm::vec3(0.0f, 1.0f, 0.0f));
         // model = glm::rotate(model, glm::radians((float)glfwGetTime() * 20.0f), glm::vec3(0.0f, 0.5f, 0.0f));
         auto view = camera.getViewMatrix();
         auto projection = glm::perspective(glm::radians(camera.fov_zoom), (float) WND_WIDTH / WND_HEIGHT, 0.1f, 100.0f);
 
+        glm::mat4 normal = glm::transpose(model);
+        normal = glm::inverse(normal);
+
         shader.setMat4("model", glm::value_ptr(model));
         shader.setMat4("view", glm::value_ptr(view));
         shader.setMat4("projection", glm::value_ptr(projection));
+        shader.setMat4("NormalMatrix",glm::value_ptr(normal));
+
+        light.pos = glm::vec3(10.0f * cos(currentFrame), 10.0f, 10.0f * sin(currentFrame));
+        light.render(shader);
+        shader.setVec3("camPos", camera.position);
 
         ourModel.Draw(shader);
+        
+        // ImGui: view parameters
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        // ImGui::ShowDemoWindow();
+        ImGui::Text("OpenGL Config");
+        ImGui::SliderFloat("rotate_angle", &rotate, -120.0f, 120.0f);
+        ImGui::SliderFloat3("displacement", &displacement.x, -5.0f, 5.0f);
+        ImGui::SliderFloat("scale", &scale.x, -2.0f, 2.0f);
+        ImGui::SliderFloat3("camera_position", &camera.position.x, -5.0f, 5.0f);
+        ImGui::Checkbox("Enable wire frame", &wireFrame);
+        ImGui::Text("\nFOV: %f", camera.fov_zoom);
+        ImGui::Text("PICTH: %f", camera.pitch);
+        ImGui::Text("YAW: %f", camera.yaw);
+        ImGui::Text("lookAT Matrix:\n  %.3f, %.3f, %.3f\n  %.3f, %.3f, %.3f\n  %.3f, %.3f, %.3f", 
+            view[0][0], view[1][0], view[2][0],
+            view[0][1], view[1][1], view[2][1],
+            view[0][2], view[1][2], view[2][2]
+        );
+        ImGui::Text("Average fps: %.4f", ImGui::GetIO().Framerate);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -177,11 +208,11 @@ void processInput(GLFWwindow* window) { // smoothly
     }
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
         float offset = deltaFrame * 0.5f; 
-        scale += glm::vec3(offset, offset, offset);
+        scale.x += offset;
     }
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
         float offset = deltaFrame * 0.5f; 
-        scale -= glm::vec3(offset, offset, offset);
+        scale.x -= offset;
     }
 }
 

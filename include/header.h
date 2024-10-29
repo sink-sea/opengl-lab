@@ -11,6 +11,7 @@
 #include "camera.h"
 #include "model.h"
 #include "filesystem.h"
+#include "light.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

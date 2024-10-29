@@ -128,7 +128,7 @@ void Camera::processMouseMovement(float xoffset, float yoffset, GLboolean constr
 void Camera::processMouseScroll(float yoffset) {
     fov_zoom -= yoffset;
     fov_zoom = std::max(1.0f, fov_zoom);
-    fov_zoom = std::min(60.0f, fov_zoom);
+    fov_zoom = std::min(80.0f, fov_zoom);
 }
 
 void Camera::processCameraPosition(float xoffset, float yoffset) {
