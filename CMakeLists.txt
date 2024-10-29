@@ -17,9 +17,9 @@ endif(WIN32)
 set(CMAKE_CXX_FLAGS "-Wall -Os")
 
 # set(BUILD_SHARED_LIBS ON)
-set(CMAKE_BUILD_TYPE Release)
 
 set(CMAKE_C_FLAGS -Os)
+set(CMAKE_BUILD_TYPE Release)
 
 # config files(root_dir)
 configure_file(config/root_directory.h.in config/root_directory.h)
@@ -63,7 +63,7 @@ function(create_project_from_src chapter demo)
     string(REPLACE "/" "_" replaced ${chapter})
     set(NAME ${replaced})
   else()
-    set(NAME "${chapter}__${demo}")
+    set(NAME "${chapter}_${demo}")
   endif()
 
   add_executable(${NAME} ${SOURCE})
